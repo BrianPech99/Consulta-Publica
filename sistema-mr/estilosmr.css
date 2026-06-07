@@ -1,0 +1,217 @@
+header 
+{
+  background: white;
+  padding: 30px;
+}
+
+footer 
+{
+  background: rgb(0,84,97);
+  color: white;
+  padding: 5px;
+  margin-top: 25px;
+}
+
+.agrupar
+{
+  margin: flex;
+  padding: 8px; 
+}
+
+.texto 
+{
+  font-family: Montserrat, Gotham;
+}
+
+.alinear-derecha  /*imagenes o textos a la derecha*/
+{
+  float: right;
+  margin-left: 25px; 
+}   
+  
+.alinear-izquierda  /*imagenes o textos a la izquierda*/
+{
+  float: left;
+} 
+.alinear-centralizado 
+{
+  text-align: center;
+}
+
+.contenido /*alinear imagenes*/
+{
+  display:flex;
+  justify-content: center;
+}
+
+
+.menu    /*Borde verde del menú*/
+{
+  background: rgb(0,84,97);
+  color: white;
+  overflow: hidden;
+} 
+
+/* items del menu */
+
+.menu ul li {
+ background-color:rgb(0,84,97);
+ padding: 8px;
+ display:inline-block; /*esta regla nos permite alinear los items a un mismo nivel*/
+
+}
+
+
+/* enlaces del menu */
+
+.menu ul a {
+ color: white;
+ text-decoration:none;
+ padding:25px;
+ /*font-weight:400;
+ font-size:15px;
+ font:"Montserrat Black";
+ text-transform:uppercase;   Esta regla cambia el tipo de letra del primer item de la lista a todas en MAYUSCULAS*/
+ letter-spacing:1px; /*en los textos del menú*/
+ overflow: hidden;
+
+}
+
+/* items del menu */
+
+.menu ul li {
+ position:relative;
+ float:left;
+ margin:0;
+ padding:0;
+ overflow: hidden;
+}
+
+/* efecto al pasar el ratón por los items del menu */
+
+.menu ul li:hover {
+ background: rgb(85, 216, 252);
+}
+
+
+.rectangulo {
+  margin: 8px;
+  width: 80px;
+  height: 30px;
+  background-color: rgb(92, 92, 94);
+  /* border: 2px solid black;  Opcional: para un borde */
+  display:inline-block;
+}
+
+
+.alinear-centralizado 
+{
+  text-align: center;
+}
+/*.borde {
+  border-width: medium;
+  border-style: solid;
+  border-color: rgb(0,84,97;
+}*/
+
+
+
+
+/*ESTE APARTADO CORRESPONDE A LOS TRABAJOS DE DESARROLLO DE LA ALUMNA EN INGENIERÍA DE DATOS DE LA UNIVERSIDAD DEL CARIBE: PALOMA CHULIM ARREDONDO*/
+    /*body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px;
+      color: #000;
+    }*/
+
+    .container {
+      background-color: #fff;
+      padding: 50px 450px;
+      border-radius: 8px;
+      /*box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);*/
+      width: 90%;
+      max-width: 900px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 30px;
+      color: rgb(0,84,97);
+    }
+
+    .description {
+      text-align: justify;
+      font-size: 16px;
+      font-weight: 400;
+      margin-bottom: 40px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 15px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f1f1f1;
+      font-weight: bold;
+      border-bottom: 2px solid #ccc;
+    }
+
+    td {
+      border-bottom: 1px solid #ddd;
+    }
+
+    .button {
+      background-color: rgb(0,84,97);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 14px;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-block;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .button:hover {
+      background-color: rgb(0,84,97);
+    }
+
+  /*AQUÍ SE CIERRA EL APARTADO DE LOS TRABAJOS DE DESARROLLO DE LA ALUMNA EN INGENIERÍA DE DATOS DE LA UNIVERSIDAD DEL CARIBE: PALOMA CHULIM ARREDONDO*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,24 @@
+/* Minimal extra styles for lists */
+.list-tools{display:grid;gap:12px}
+.tool-card{background:#fff;border:1px solid #e4e6e8;border-radius:12px;padding:14px}
+.tool-head{display:flex;gap:10px;justify-content:space-between;align-items:center;border-bottom:1px solid #eef0f2;padding-bottom:8px;margin-bottom:8px}
+.tool-meta{display:flex;gap:8px;flex-wrap:wrap}
+.k{background:#eef3f5;border:1px solid #dfe5e8;border-radius:999px;padding:4px 8px;font-size:.85rem}
+.search-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.search-row .input{min-width:260px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#f1f3f5;border:1px solid #dee2e6;font-size:.85rem}
+.btn{display:inline-block;background:#005461;color:#fff;text-decoration:none;padding:8px 12px;border-radius:10px;border:1px solid #00414b}
+.btn.outline{background:#fff;color:#005461}
+.hidden{display:none !important}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+.topbar{background:#fff;border-bottom:1px solid #e4e6e8}
+.menu{background:#005461;color:#fff}
+.nav{list-style:none;margin:0;padding:0;display:flex;gap:0;align-items:center}
+.nav a{display:block;color:#fff;text-decoration:none;padding:12px 14px}
+.hero{background:linear-gradient(to bottom right,#005461,#003f48);color:#fff;padding:36px 16px;margin-bottom:18px}
+.texto{font-family:system-ui,-apple-system,Segoe UI,Roboto;line-height:1.55;background:#f5f7f8;color:#102a31;margin:0}
+footer{background:#005461;color:#fff;margin-top:20px}
+.copy{margin:0;padding:10px 16px;border-top:1px solid rgba(255,255,255,.25);text-align:center}
+.input,select{padding:10px 12px;border:1px solid #e4e6e8;border-radius:10px;font:inherit}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:10px;border-bottom:1px solid #e4e6e8;text-align:left}

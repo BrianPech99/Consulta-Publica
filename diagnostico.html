@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Diagnóstico IMDAI — Firebase</title><link rel="stylesheet" href="estilos.css"/>
+<style>
+.wrap{max-width:900px;margin:24px auto;padding:0 16px}.panel{background:#fff;border:1px solid #e4e6e8;border-radius:12px;padding:16px;margin-bottom:14px}
+pre{white-space:pre-wrap;background:#0b2530;color:#e6f1f4;padding:10px;border-radius:8px;max-height:260px;overflow:auto}
+.btn{display:inline-block;background:#005461;color:#fff;border:1px solid #003c45;padding:8px 12px;border-radius:10px;text-decoration:none;cursor:pointer}
+.btn.out{background:#fff;color:#005461}
+.row{display:grid;gap:6px} input{padding:8px 10px;border:1px solid #e4e6e8;border-radius:8px}
+.muted{color:#5b7780}
+</style>
+<script type="module" src="app_debug.js" defer></script>
+</head>
+<body><div class="wrap">
+<h1>Diagnóstico IMDAI — Firebase</h1>
+<p class="muted">Verifica <strong>inicio de sesión</strong> y <strong>guardado en Firestore</strong>. Los mensajes aparecen abajo.</p>
+<div class="panel"><h3>1) Estado del SDK</h3><p>Firebase App: <span id="sdk-app">—</span></p><p>Auth: <span id="sdk-auth">—</span></p><p>Firestore: <span id="sdk-db">—</span></p><p>Storage: <span id="sdk-st">—</span></p></div>
+<div class="panel"><h3>2) Autenticación</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+  <div><div class="row"><label>Correo</label><input id="email" type="email" placeholder="tucorreo@ejemplo.com"></div>
+       <div class="row"><label>Contraseña</label><input id="pass" type="password" placeholder="Mín. 6 caracteres"></div>
+       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+         <button id="btn-register" class="btn">Crear cuenta</button>
+         <button id="btn-login" class="btn">Iniciar sesión</button>
+         <button id="btn-logout" class="btn out">Cerrar sesión</button>
+       </div><p class="muted" id="auth-state">Estado: —</p></div>
+  <div><div class="panel" style="margin:0"><strong>Usuario actual</strong><p id="who">—</p></div></div>
+</div></div>
+<div class="panel"><h3>3) Prueba de guardado</h3>
+  <div class="row"><label>Tema</label><input id="test-tema" placeholder="Tema de prueba"></div>
+  <div class="row"><label>Comentario</label><input id="test-comentario" placeholder="Comentario de prueba"></div>
+  <div style="margin-top:8px"><button id="btn-write" class="btn">Escribir documento en Firestore</button></div>
+  <p class="muted" id="write-result">—</p></div>
+<div class="panel"><h3>Mensajes</h3><pre id="log"></pre></div>
+</div></body></html>
