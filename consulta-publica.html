@@ -13,9 +13,6 @@
     .options.two{grid-template-columns:repeat(2,minmax(0,1fr))}
     .options.three{grid-template-columns:repeat(3,minmax(0,1fr))}
     @media (max-width:820px){.options.two,.options.three{grid-template-columns:1fr}}
-    .auth-box{border:1px solid #dfe6e8;border-radius:12px;padding:16px;background:#f8fbfc;margin-bottom:12px}
-    .auth-box h3{margin:0 0 10px}
-    .auth-tabs{display:flex;gap:8px;margin-bottom:12px}
   </style>
 </head>
 <body class="texto">
@@ -37,7 +34,7 @@
   <section class="hero" role="banner">
     <div class="wrap">
       <h1>Consulta Pública de los Programas de Mejora Regulatoria</h1>
-      <p>Envía tu opinión (PDF opcional, hasta 10 MB). Campos marcados con * son obligatorios.</p>
+      <p>Envía tu opinión (PDF opcional, hasta 10 MB). Campos marcados con * son obligatorios. No es necesario registrarse ni iniciar sesión.</p>
       <div class="chiplist" aria-hidden="true">
         <span class="chip">Transparencia</span>
         <span class="chip">Participación ciudadana</span>
@@ -51,69 +48,15 @@
       <aside class="card" aria-label="Aviso">
         <div class="hd">Aviso</div>
         <div class="bd">
-          <p>Para participar en esta consulta pública es necesario registrarse e iniciar sesión.</p>
-          <p>Tus datos y documentos se remitirán de forma segura al IMDAI.</p>
+          <p>No es necesario registrarse ni iniciar sesión para participar en esta consulta pública.</p>
+          <p>Al enviar el formulario, tus datos y documentos se remitirán de forma segura al IMDAI mediante correo electrónico.</p>
         </div>
       </aside>
 
       <div class="card">
-        <div class="hd">Participar</div>
+        <div class="hd">Encuesta</div>
         <div class="bd">
-
-          <!-- Panel: no autenticado -->
-          <div id="account-signed-out">
-            <div class="auth-box">
-              <div class="auth-tabs">
-                <button id="btn-open-login" class="btn outline">Iniciar sesión</button>
-                <button id="btn-open-register" class="btn">Registrarse</button>
-              </div>
-
-              <!-- Formulario de login -->
-              <form id="form-login" class="form">
-                <h3>Iniciar sesión</h3>
-                <div class="row">
-                  <label for="login-email">Correo *</label>
-                  <input id="login-email" type="email" class="input" required placeholder="tu@correo.com"/>
-                </div>
-                <div class="row">
-                  <label for="login-pass">Contraseña *</label>
-                  <input id="login-pass" type="password" class="input" required placeholder="Contraseña"/>
-                </div>
-                <div class="actions">
-                  <button class="btn" type="submit">Entrar</button>
-                </div>
-              </form>
-
-              <!-- Formulario de registro -->
-              <form id="form-register" class="form hidden">
-                <h3>Crear cuenta</h3>
-                <div class="row">
-                  <label for="reg-email">Correo *</label>
-                  <input id="reg-email" type="email" class="input" required placeholder="tu@correo.com"/>
-                </div>
-                <div class="row">
-                  <label for="reg-pass">Contraseña * (mínimo 6 caracteres)</label>
-                  <input id="reg-pass" type="password" class="input" required minlength="6" placeholder="Contraseña"/>
-                </div>
-                <div class="actions">
-                  <button class="btn" type="submit">Registrarse</button>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <!-- Panel: autenticado -->
-          <div id="account-signed-in" class="hidden">
-            <div class="notice" style="margin-bottom:10px">
-              Conectado como: <strong id="user-email"></strong>
-              <button id="btn-logout" class="btn outline" style="margin-left:10px">Cerrar sesión</button>
-            </div>
-          </div>
-
-          <!-- Formulario de opinión (solo si está autenticado) -->
-          <div id="form-locked" class="notice">Inicia sesión para enviar tu opinión.</div>
-
-          <form id="opinion-form" class="form hidden">
+          <form id="opinion-form" class="form">
             <!-- Datos del participante -->
             <div class="fieldset">
               <div class="legend">Datos del participante</div>
@@ -125,6 +68,10 @@
                 <div class="row">
                   <label for="telefono">Teléfono</label>
                   <input id="telefono" name="telefono" type="tel" class="input" placeholder="10 dígitos"/>
+                </div>
+                <div class="row">
+                  <label for="email">Correo electrónico *</label>
+                  <input id="email" name="email" type="email" class="input" required placeholder="tucorreo@ejemplo.com"/>
                 </div>
               </div>
             </div>
@@ -246,6 +193,49 @@
     <p class="copy">2025. Derechos reservados.</p>
   </footer>
 
-  <script src="app.js" defer></script>
+  <script>
+  (function () {
+    const API = "http://localhost:3000/api";
+    const form = document.getElementById("opinion-form");
+    const status = document.getElementById("status");
+    const ok = document.getElementById("sent-ok");
+    const err = document.getElementById("sent-error");
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      if (status) status.textContent = "Enviando…";
+      if (ok) ok.classList.add("hidden");
+      if (err) err.classList.add("hidden");
+
+      const file = document.getElementById("archivo").files[0];
+      if (file && file.size > 10 * 1024 * 1024) {
+        if (status) status.textContent = "";
+        alert("El archivo excede 10 MB.");
+        return;
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const fd = new FormData(form);
+      const pub = urlParams.get("pub");
+      if (pub) fd.append("id_publicacion", pub);
+
+      try {
+        const res = await fetch(API + "/opiniones", { method: "POST", body: fd });
+        const data = await res.json();
+        if (status) status.textContent = "";
+        if (res.ok) {
+          form.reset();
+          if (ok) ok.classList.remove("hidden");
+        } else {
+          alert(data.error || "Error al enviar.");
+          if (err) err.classList.remove("hidden");
+        }
+      } catch (e) {
+        if (status) status.textContent = "";
+        if (err) err.classList.remove("hidden");
+      }
+    });
+  })();
+  </script>
 </body>
 </html>

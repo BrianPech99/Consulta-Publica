@@ -45,10 +45,10 @@ function adminMiddleware(req, res, next) {
   next();
 }
 
-// POST /api/opiniones — ciudadano autenticado envía opinión
-router.post("/", authMiddleware, upload.single("archivo"), async (req, res) => {
-  const { nombre, telefono, grupo, edad, dependencia, opinion, id_publicacion } = req.body;
-  if (!nombre || !grupo || !edad || !dependencia || !opinion) {
+// POST /api/opiniones — cualquier ciudadano (sin auth)
+router.post("/", upload.single("archivo"), async (req, res) => {
+  const { nombre, email, telefono, grupo, edad, dependencia, opinion, id_publicacion } = req.body;
+  if (!nombre || !email || !grupo || !edad || !dependencia || !opinion) {
     return res.status(400).json({ error: "Faltan campos obligatorios." });
   }
 
@@ -57,9 +57,9 @@ router.post("/", authMiddleware, upload.single("archivo"), async (req, res) => {
   try {
     await pool.query(
       `INSERT INTO opiniones
-        (id_usuario, id_publicacion, nombre, telefono, grupo, edad, dependencia, opinion, archivo_url, estado, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'recibida', NOW())`,
-      [req.user.id, id_publicacion || null, nombre, telefono || null, grupo, edad, dependencia, opinion, archivoUrl]
+        (id_usuario, id_publicacion, nombre, email, telefono, grupo, edad, dependencia, opinion, archivo_url, estado, created_at)
+       VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'recibida', NOW())`,
+      [id_publicacion || null, nombre, email, telefono || null, grupo, edad, dependencia, opinion, archivoUrl]
     );
     res.json({ ok: true });
   } catch (err) {
@@ -79,16 +79,15 @@ router.get("/", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     let where = [];
     let params = [];
-    if (q) { where.push("(o.nombre LIKE ? OR o.opinion LIKE ? OR u.email LIKE ?)"); params.push(q, q, q); }
+    if (q) { where.push("(o.nombre LIKE ? OR o.opinion LIKE ? OR o.email LIKE ?)"); params.push(q, q, q); }
     if (estado) { where.push("o.estado = ?"); params.push(estado); }
     const whereSQL = where.length ? "WHERE " + where.join(" AND ") : "";
 
     const [rows] = await pool.query(
-      `SELECT o.id_opinion, o.nombre, u.email, o.telefono, o.grupo, o.edad,
+      `SELECT o.id_opinion, o.nombre, o.email, o.telefono, o.grupo, o.edad,
               o.dependencia, o.opinion, o.archivo_url, o.estado,
               o.created_at, o.id_publicacion
        FROM opiniones o
-       LEFT JOIN usuarios u ON u.id_usuario = o.id_usuario
        ${whereSQL}
        ORDER BY o.created_at DESC
        LIMIT ? OFFSET ?`,
@@ -96,7 +95,7 @@ router.get("/", authMiddleware, adminMiddleware, async (req, res) => {
     );
 
     const [[{ total }]] = await pool.query(
-      `SELECT COUNT(*) AS total FROM opiniones o LEFT JOIN usuarios u ON u.id_usuario = o.id_usuario ${whereSQL}`,
+      `SELECT COUNT(*) AS total FROM opiniones o ${whereSQL}`,
       params
     );
 
