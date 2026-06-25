@@ -1,76 +1,130 @@
-// admin.js — Vista interna (lectura protegida)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-import { getFirestore, collection, query, orderBy, limit, startAfter, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+// admin.js — Panel de administración (sin Firebase)
+(function () {
+  const API = "http://localhost:3000/api";
+  const $ = (s) => document.querySelector(s);
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDX4VW0Wyse7umyVfpPaU5m4ckIqYUGEBo",
-  authDomain: "imdai-consulta.firebaseapp.com",
-  projectId: "imdai-consulta",
-  storageBucket: "imdai-consulta.appspot.com",
-  messagingSenderId: "563693410755",
-  appId: "1:563693410755:web:e50bf1c58828b442668576"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-const $ = (s)=>document.querySelector(s);
-const who = $("#who"), meta=$("#meta"), qInput=$("#q"), limitSel=$("#limit"), tbody=$("#tbody");
-const noticeDenied=$("#notice-denied"), noticeAuth=$("#notice-auth");
-const btnPrev=$("#btn-prev"), btnNext=$("#btn-next"), btnReload=$("#btn-reload"), btnExport=$("#btn-export"), btnLogout=$("#btn-logout");
-
-const DOMAIN_OK = (email)=>/.*@cancun\.gob\.mx$/i.test(email);
-// Whitelist con tu UID
-const UID_ALLOWLIST = new Set(["SPim2jfIjfTDZEytGuR1l5bga6C3"]);
-
-let pageSize = Number(limitSel.value);
-let lastDoc = null; let firstDoc = null; let stack = [];
-
-function fmtDate(ts){ if(!ts) return ""; const d=ts instanceof Timestamp? ts.toDate(): new Date(ts); return d.toLocaleString(); }
-function rowHTML(doc){ const d=doc.data();
-  return `<tr>
-    <td>${fmtDate(d.createdAt)}</td>
-    <td>${(d.nombre||"").replace(/</g,"&lt;")}</td>
-    <td>${(d.email||"").replace(/</g,"&lt;")}</td>
-    <td>${(d.tema||"").replace(/</g,"&lt;")}</td>
-    <td>${(d.comentario||"").replace(/</g,"&lt;")}</td>
-    <td>${(d.telefono||"").replace(/</g,"&lt;")}</td>
-    <td>${d.archivoURL ? `<a href="${d.archivoURL}" target="_blank" rel="noopener">PDF</a>` : ""}</td>
-    <td class="muted">${d.uid||""}</td>
-  </tr>`;
-}
-
-async function loadPage(direction){
-  tbody.innerHTML = `<tr><td colspan="8">Cargando…</td></tr>`;
-  let baseQ = query(collection(db,"opiniones"), orderBy("createdAt","desc"), limit(pageSize));
-  if(direction==="next" && lastDoc){
-    baseQ = query(collection(db,"opiniones"), orderBy("createdAt","desc"), startAfter(lastDoc), limit(pageSize));
-  }else if(direction==="prev" && stack.length>1){
-    stack.pop(); const prevCursor = stack[stack.length-1];
-    baseQ = query(collection(db,"opiniones"), orderBy("createdAt","desc"), startAfter(prevCursor), limit(pageSize));
+  function getToken() { return localStorage.getItem("imdai_token"); }
+  function getEmail() { return localStorage.getItem("imdai_email"); }
+  function clearSession() {
+    localStorage.removeItem("imdai_token");
+    localStorage.removeItem("imdai_email");
   }
-  const snap = await getDocs(baseQ); const docs = snap.docs;
-  if(docs.length===0){ tbody.innerHTML = `<tr><td colspan="8">Sin resultados.</td></tr>`; meta.textContent="0 resultados"; return; }
-  firstDoc = docs[0]; lastDoc = docs[docs.length-1]; if(direction!=="prev") stack.push(firstDoc);
-  tbody.innerHTML = docs.map(rowHTML).join(""); meta.textContent = `${docs.length} resultados`;
-}
-btnReload.addEventListener("click", ()=>{ stack=[]; lastDoc=null; loadPage(); });
-btnNext.addEventListener("click", ()=> loadPage("next"));
-btnPrev.addEventListener("click", ()=> loadPage("prev"));
-btnExport.addEventListener("click", ()=>{
-  const rows=[...tbody.querySelectorAll("tr")].map(tr=>[...tr.children].map(td=>td.textContent));
-  const head=["Fecha","Nombre","Correo","Tema","Comentario","Teléfono","Archivo","UID"];
-  const csv=[head,...rows].map(r=>r.map(v=>{const s=String(v).replace(/"/g,'""');return /[",\n]/.test(s)?`"${s}"`:s;}).join(",")).join("\n");
-  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=`opiniones_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(url);
-});
-btnLogout.addEventListener("click", ()=> signOut(auth));
 
-onAuthStateChanged(auth, async (user)=>{
-  if(!user){ who.textContent="(no autenticado)"; noticeAuth.classList.remove("hidden"); noticeDenied.classList.add("hidden"); tbody.innerHTML=""; return; }
-  who.textContent = `${user.email} — UID: ${user.uid}`;
-  const allowed = DOMAIN_OK(user.email||"") || UID_ALLOWLIST.has(user.uid);
-  if(!allowed){ noticeDenied.classList.remove("hidden"); noticeAuth.classList.add("hidden"); tbody.innerHTML=""; return; }
-  noticeDenied.classList.add("hidden"); noticeAuth.classList.add("hidden"); await loadPage();
-});
+  const whoEl = $("#who");
+  const noticeDenied = $("#notice-denied");
+  const noticeAuth = $("#notice-auth");
+  const tbody = $("#tbody");
+  const meta = $("#meta");
+  const qInput = $("#q");
+  const limitSel = $("#limit");
+  const btnPrev = $("#btn-prev");
+  const btnNext = $("#btn-next");
+  const btnReload = $("#btn-reload");
+  const btnExport = $("#btn-export");
+  const btnLogout = $("#btn-logout");
+
+  let currentPage = 1;
+  let currentTotal = 0;
+
+  function esc(str) {
+    return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function fmtDate(str) {
+    if (!str) return "";
+    return new Date(str).toLocaleString("es-MX");
+  }
+
+  function rowHTML(r) {
+    const pdf = r.archivo_url
+      ? `<a href="${esc(r.archivo_url)}" target="_blank" rel="noopener">PDF</a>`
+      : "";
+    return `<tr>
+      <td>${fmtDate(r.created_at)}</td>
+      <td>${esc(r.nombre)}</td>
+      <td>${esc(r.email)}</td>
+      <td>${esc(r.grupo)}</td>
+      <td>${esc(r.dependencia)}</td>
+      <td>${esc(r.opinion)}</td>
+      <td>${esc(r.telefono)}</td>
+      <td>${pdf}</td>
+      <td><span class="pill">${esc(r.estado)}</span></td>
+    </tr>`;
+  }
+
+  async function loadPage(page) {
+    const token = getToken();
+    if (!token) return;
+    const limit = Number(limitSel?.value || 25);
+    const q = qInput?.value.trim() || "";
+    tbody.innerHTML = `<tr><td colspan="9">Cargando…</td></tr>`;
+    try {
+      const params = new URLSearchParams({ page, limit });
+      if (q) params.set("q", q);
+      const res = await fetch(`${API}/opiniones?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401 || res.status === 403) {
+        noticeDenied?.classList.remove("hidden");
+        tbody.innerHTML = "";
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) { tbody.innerHTML = `<tr><td colspan="9">${esc(data.error)}</td></tr>`; return; }
+
+      currentTotal = data.total;
+      currentPage = data.page;
+      const totalPages = Math.ceil(data.total / data.limit);
+
+      if (data.rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9">Sin resultados.</td></tr>`;
+      } else {
+        tbody.innerHTML = data.rows.map(rowHTML).join("");
+      }
+      if (meta) meta.textContent = `${data.total} total — página ${currentPage} de ${totalPages}`;
+      if (btnPrev) btnPrev.disabled = currentPage <= 1;
+      if (btnNext) btnNext.disabled = currentPage >= totalPages;
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="9">Error de red.</td></tr>`;
+    }
+  }
+
+  function exportCSV() {
+    const head = ["Fecha", "Nombre", "Correo", "Grupo", "Dependencia", "Opinión", "Teléfono", "Archivo", "Estado"];
+    const rows = [...tbody.querySelectorAll("tr")].map((tr) =>
+      [...tr.children].map((td) => td.textContent.trim())
+    );
+    const csv = [head, ...rows]
+      .map((r) =>
+        r.map((v) => { const s = String(v).replace(/"/g, '""'); return /[",\n]/.test(s) ? `"${s}"` : s; }).join(",")
+      )
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `opiniones_${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  btnReload?.addEventListener("click", () => loadPage(1));
+  btnPrev?.addEventListener("click", () => { if (currentPage > 1) loadPage(currentPage - 1); });
+  btnNext?.addEventListener("click", () => loadPage(currentPage + 1));
+  btnExport?.addEventListener("click", exportCSV);
+  qInput?.addEventListener("input", () => loadPage(1));
+  limitSel?.addEventListener("change", () => loadPage(1));
+  btnLogout?.addEventListener("click", () => { clearSession(); location.href = "consulta-publica.html"; });
+
+  // Inicializar
+  const token = getToken();
+  const email = getEmail();
+  if (!token) {
+    noticeAuth?.classList.remove("hidden");
+    noticeDenied?.classList.add("hidden");
+    if (whoEl) whoEl.textContent = "(no autenticado)";
+  } else {
+    if (whoEl) whoEl.textContent = email || "";
+    noticeAuth?.classList.add("hidden");
+    noticeDenied?.classList.add("hidden");
+    loadPage(1);
+  }
+})();

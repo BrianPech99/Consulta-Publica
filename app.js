@@ -1,81 +1,147 @@
-// app.js para encuesta idéntica al Google Form (CDN v12.3.0)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-storage.js";
+// app.js — Autenticación ciudadana y envío de opiniones (sin Firebase)
+(function () {
+  const API = "http://localhost:3000/api";
+  const $ = (s) => document.querySelector(s);
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDX4VW0Wyse7umyVfpPaU5m4ckIqYUGEBo",
-  authDomain: "imdai-consulta.firebaseapp.com",
-  projectId: "imdai-consulta",
-  storageBucket: "imdai-consulta.appspot.com",
-  messagingSenderId: "563693410755",
-  appId: "1:563693410755:web:e50bf1c58828b442668576"
-};
+  // --- Estado de sesión ---
+  function getToken() { return localStorage.getItem("imdai_token"); }
+  function getEmail() { return localStorage.getItem("imdai_email"); }
+  function saveSession(token, email) {
+    localStorage.setItem("imdai_token", token);
+    localStorage.setItem("imdai_email", email);
+  }
+  function clearSession() {
+    localStorage.removeItem("imdai_token");
+    localStorage.removeItem("imdai_email");
+  }
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+  function updateUI() {
+    const signed = !!getToken();
+    $("#account-signed-out")?.classList.toggle("hidden", signed);
+    $("#account-signed-in")?.classList.toggle("hidden", !signed);
+    $("#form-locked")?.classList.toggle("hidden", signed);
+    $("#opinion-form")?.classList.toggle("hidden", !signed);
+    $("#sent-ok")?.classList.add("hidden");
+    $("#sent-error")?.classList.add("hidden");
+    if (signed) {
+      const emailEl = $("#user-email");
+      if (emailEl) emailEl.textContent = getEmail() || "";
+    }
+  }
 
-const $ = (s)=>document.querySelector(s);
+  // --- Mostrar/ocultar paneles de auth ---
+  document.querySelectorAll("#btn-open-login").forEach((b) =>
+    b.addEventListener("click", () => {
+      $("#form-register")?.classList.add("hidden");
+      $("#form-login")?.classList.remove("hidden");
+    })
+  );
+  document.querySelectorAll("#btn-open-register").forEach((b) =>
+    b.addEventListener("click", () => {
+      $("#form-login")?.classList.add("hidden");
+      $("#form-register")?.classList.remove("hidden");
+    })
+  );
 
-// Auth UI
-const accountOut=$("#account-signed-out"), accountIn=$("#account-signed-in"), userEmail=$("#user-email"), userUID=$("#user-uid");
-const formRegister=$("#form-register"), formLogin=$("#form-login"), btnLogout=$("#btn-logout");
-document.querySelectorAll("#btn-open-login")?.forEach(b=>b.addEventListener("click",()=>{ formRegister.classList.add("hidden"); formLogin.classList.remove("hidden"); }));
-document.querySelectorAll("#btn-open-register")?.forEach(b=>b.addEventListener("click",()=>{ formLogin.classList.add("hidden"); formRegister.classList.remove("hidden"); }));
-formRegister?.addEventListener("submit", async (e)=>{ e.preventDefault(); const email=$("#reg-email").value.trim(), pass=$("#reg-pass").value.trim(); try{ const cred=await createUserWithEmailAndPassword(auth,email,pass); try{ await sendEmailVerification(cred.user);}catch(_){}}catch(err){ alert("Error al registrar: "+(err?.message||err)); } });
-formLogin?.addEventListener("submit", async (e)=>{ e.preventDefault(); const email=$("#login-email").value.trim(), pass=$("#login-pass").value.trim(); try{ await signInWithEmailAndPassword(auth,email,pass);}catch(err){ alert("Error al iniciar sesión: "+(err?.message||err)); } });
-btnLogout?.addEventListener("click", ()=> signOut(auth));
+  // --- Registro ---
+  $("#form-register")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = $("#reg-email").value.trim();
+    const pass = $("#reg-pass").value.trim();
+    try {
+      const res = await fetch(`${API}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: pass }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || "Error al registrar."); return; }
+      saveSession(data.token, data.email);
+      updateUI();
+    } catch (err) {
+      alert("Error de red al registrar.");
+    }
+  });
 
-const formLocked=$("#form-locked"), opinionForm=$("#opinion-form"), sentOK=$("#sent-ok"), sentError=$("#sent-error"), statusEl=$("#status");
-onAuthStateChanged(auth, (user)=>{
-  const signed=!!user;
-  accountOut?.classList.toggle("hidden", signed);
-  accountIn?.classList.toggle("hidden", !signed);
-  formLocked?.classList.toggle("hidden", signed);
-  opinionForm?.classList.toggle("hidden", !signed);
-  sentOK?.classList.add("hidden"); sentError?.classList.add("hidden");
-  if(signed){ userEmail && (userEmail.textContent=user.email||"(sin correo)"); userUID && (userUID.textContent=user.uid); }
-});
+  // --- Login ---
+  $("#form-login")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = $("#login-email").value.trim();
+    const pass = $("#login-pass").value.trim();
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: pass }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || "Error al iniciar sesión."); return; }
+      saveSession(data.token, data.email);
+      updateUI();
+    } catch (err) {
+      alert("Error de red al iniciar sesión.");
+    }
+  });
 
-// Envío (mapa 1:1 con preguntas del Form)
-opinionForm?.addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  statusEl && (statusEl.textContent="Enviando…"); sentOK?.classList.add("hidden"); sentError?.classList.add("hidden");
-  const user=auth.currentUser; if(!user){ statusEl&&(statusEl.textContent=""); alert("Inicia sesión primero."); return; }
+  // --- Logout ---
+  $("#btn-logout")?.addEventListener("click", () => {
+    clearSession();
+    updateUI();
+  });
 
-  const nombre=$("#nombre").value.trim();
-  const telefono=$("#telefono").value.trim();
-  const grupo=(document.querySelector('input[name="grupo"]:checked')?.value)||"";
-  const edad=(document.querySelector('input[name="edad"]:checked')?.value)||"";
-  const dependencia=$("#dependencia").value.trim();
-  const opinion=$("#opinion").value.trim();
-  const file=$("#archivo").files[0];
+  // --- Envío de opinión ---
+  $("#opinion-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const token = getToken();
+    if (!token) { alert("Inicia sesión primero."); return; }
 
-  try{
-    let archivoURL=null;
-    if(file){
-      if(file.size>10*1024*1024) throw new Error("El archivo excede 10 MB");
-      const r=ref(storage, `opiniones/${user.uid}/${Date.now()}_${file.name}`);
-      await uploadBytes(r, file);
-      archivoURL = await getDownloadURL(r);
+    const statusEl = $("#status");
+    if (statusEl) statusEl.textContent = "Enviando…";
+    $("#sent-ok")?.classList.add("hidden");
+    $("#sent-error")?.classList.add("hidden");
+
+    const file = $("#archivo")?.files[0];
+    if (file && file.size > 10 * 1024 * 1024) {
+      if (statusEl) statusEl.textContent = "";
+      alert("El archivo excede 10 MB.");
+      return;
     }
 
-    await addDoc(collection(db,"opiniones"), {
-      uid:user.uid, email:user.email||null,
-      nombre, telefono,
-      grupo, edad, dependencia, opinion,
-      archivoURL, createdAt: serverTimestamp(), estado:"recibida"
-    });
+    // Leer id_publicacion de la URL si viene en ?pub=X
+    const urlParams = new URLSearchParams(window.location.search);
+    const idPub = urlParams.get("pub") || "";
 
-    statusEl && (statusEl.textContent="");
-    opinionForm.reset();
-    sentOK?.classList.remove("hidden");
-  }catch(err){
-    console.error(err);
-    statusEl && (statusEl.textContent="");
-    sentError?.classList.remove("hidden");
-  }
-});
+    const fd = new FormData();
+    fd.append("nombre", $("#nombre").value.trim());
+    fd.append("telefono", $("#telefono").value.trim());
+    fd.append("grupo", document.querySelector('input[name="grupo"]:checked')?.value || "");
+    fd.append("edad", document.querySelector('input[name="edad"]:checked')?.value || "");
+    fd.append("dependencia", $("#dependencia").value);
+    fd.append("opinion", $("#opinion").value.trim());
+    if (idPub) fd.append("id_publicacion", idPub);
+    if (file) fd.append("archivo", file);
+
+    try {
+      const res = await fetch(`${API}/opiniones`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (statusEl) statusEl.textContent = "";
+      if (res.ok) {
+        $("#opinion-form").reset();
+        $("#sent-ok")?.classList.remove("hidden");
+      } else {
+        alert(data.error || "Error al enviar.");
+        $("#sent-error")?.classList.remove("hidden");
+      }
+    } catch (err) {
+      if (statusEl) statusEl.textContent = "";
+      $("#sent-error")?.classList.remove("hidden");
+    }
+  });
+
+  // Inicializar UI al cargar
+  updateUI();
+})();
