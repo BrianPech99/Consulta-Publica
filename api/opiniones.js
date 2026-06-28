@@ -37,9 +37,15 @@ function authMiddleware(req, res, next) {
 }
 
 function adminMiddleware(req, res, next) {
-  const DOMAIN_OK = /.*@cancun\.gob\.mx$/i.test(req.user?.email || "");
-  const WHITELIST = new Set(["1"]);
-  if (!DOMAIN_OK && !WHITELIST.has(String(req.user?.id))) {
+  const email = req.user?.email || "";
+  const DOMAIN_OK = /.*@cancun\.gob\.mx$/i.test(email);
+  const EMAIL_WHITELIST = new Set([
+    "imdai.direcciongeneral@gmail.com",
+    "direcciondemejaregulatoria3@gmail.com",
+    "direccion.dai2.imdai@gmail.com",
+    "bjventanillaunica@gmail.com"
+  ]);
+  if (!DOMAIN_OK && !EMAIL_WHITELIST.has(email)) {
     return res.status(403).json({ error: "Acceso denegado." });
   }
   next();
