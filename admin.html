@@ -2,21 +2,29 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>IMDAI — Admin Opiniones</title>
+  <title>IMDAI — Acceso Interno</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="estilos.css" />
   <script src="search.js" defer></script>
   <script src="admin.js" defer></script>
-  <style>.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}.pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef3f4;border:1px solid #dfe6e8;font-size:.85rem}.muted{color:#5b7780;font-size:.9rem}.table-wrap{overflow:auto}</style>
+  <style>
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef3f4;border:1px solid #dfe6e8;font-size:.85rem}
+    .muted{color:#5b7780;font-size:.9rem}
+    .table-wrap{overflow:auto}
+    .login-box{max-width:380px;margin:40px auto}
+  </style>
 </head>
 <body class="texto">
   <header class="topbar">
     <div class="wrap flex-between">
       <div style="display:flex;gap:10px;align-items:center">
         <img src="imagenes/escudo de armas.png" width="160" height="45" alt="Escudo"/>
-        <strong>Admin — Consulta Pública</strong>
+        <strong>IMDAI — Acceso interno</strong>
       </div>
-      <div><button id="btn-logout" class="btn outline">Cerrar sesión</button></div>
+      <div id="header-logout" class="hidden">
+        <button id="btn-logout" class="btn outline">Cerrar sesión</button>
+      </div>
     </div>
   </header>
   <nav class="menu texto" aria-label="Navegación principal">
@@ -26,32 +34,78 @@
       <li class="nav-search"><button class="search-btn" aria-label="Buscar">🔎</button></li>
     </ul>
   </nav>
-  <section class="hero" role="banner">
-    <div class="wrap">
-      <h1>Panel de Opiniones</h1>
-      <p>Solo personal autorizado. Lectura de la colección <code>opiniones</code>.</p>
-      <div class="chiplist" aria-hidden="true"><span class="chip">Exportar CSV</span><span class="chip">Filtros</span><span class="chip">Paginación</span></div>
-    </div>
-  </section>
-  <div class="wrap">
-    <div id="notice-denied" class="error hidden">Acceso denegado. Inicia sesión con un correo institucional o UID autorizado.</div>
-    <div id="notice-auth" class="notice hidden">Inicia sesión desde <a class="btn outline" href="consulta-publica.html">Consulta Pública</a> y regresa aquí.</div>
-    <div class="card"><div class="bd">
-      <div class="toolbar">
-        <input id="q" class="input" type="search" placeholder="Filtrar (nombre, tema, comentario)…" style="min-width:320px">
-        <select id="limit" class="input" style="width:120px"><option value="10">10 filas</option><option value="25" selected>25 filas</option><option value="50">50 filas</option></select>
-        <button id="btn-reload" class="btn">Actualizar</button>
-        <button id="btn-prev" class="btn outline">← Anterior</button>
-        <button id="btn-next" class="btn outline">Siguiente →</button>
-        <button id="btn-export" class="btn">Exportar CSV</button>
-        <span id="meta" class="pill">0 resultados</span>
+
+  <!-- Panel de login (visible cuando no hay sesión) -->
+  <div id="panel-login" class="wrap login-box">
+    <div class="card">
+      <div class="hd">Acceso personal IMDAI</div>
+      <div class="bd">
+        <p class="muted" style="margin-bottom:16px">Ingresa con tu correo institucional <strong>@cancun.gob.mx</strong> para acceder al panel de opiniones.</p>
+        <form id="form-login-admin" class="form">
+          <div class="row">
+            <label for="admin-email">Correo institucional</label>
+            <input id="admin-email" type="email" class="input" required placeholder="usuario@cancun.gob.mx"/>
+          </div>
+          <div class="row">
+            <label for="admin-pass">Contraseña</label>
+            <input id="admin-pass" type="password" class="input" required placeholder="Contraseña"/>
+          </div>
+          <div id="login-error" class="error hidden" style="margin:8px 0"></div>
+          <div class="actions">
+            <button class="btn" type="submit">Entrar</button>
+          </div>
+        </form>
       </div>
-      <div class="muted">Conectado como: <span id="who"></span></div>
-    </div></div>
-    <div class="card" style="margin-top:12px;"><div class="bd table-wrap">
-      <table class="table" id="tbl"><thead><tr><th>Fecha</th><th>Nombre</th><th>Correo</th><th>Grupo</th><th>Dependencia</th><th>Opinión</th><th>Teléfono</th><th>Archivo</th><th>Estado</th></tr></thead><tbody id="tbody"></tbody></table>
-    </div></div>
+    </div>
   </div>
-  <footer class="site-footer"><div class="wrap footer-grid"><div><h4>Horario</h4><p>Lunes a viernes, 09:00 a 16:00</p></div><div><h4>Contacto</h4><p>imdai.direcciongeneral@gmail.com</p></div><div><h4>Redes</h4><p>@Imdaibj</p></div></div><p class="copy">2025. Derechos reservados.</p></footer>
+
+  <!-- Panel de admin (visible cuando hay sesión válida) -->
+  <div id="panel-admin" class="hidden">
+    <section class="hero" role="banner">
+      <div class="wrap">
+        <h1>Panel de Opiniones</h1>
+        <p>Solo personal autorizado.</p>
+        <div class="chiplist" aria-hidden="true">
+          <span class="chip">Exportar CSV</span>
+          <span class="chip">Filtros</span>
+          <span class="chip">Paginación</span>
+        </div>
+      </div>
+    </section>
+    <div class="wrap">
+      <div id="notice-denied" class="error hidden">Acceso denegado. Se requiere correo institucional @cancun.gob.mx.</div>
+      <div class="card"><div class="bd">
+        <div class="toolbar">
+          <input id="q" class="input" type="search" placeholder="Filtrar (nombre, correo, opinión)…" style="min-width:280px">
+          <select id="limit" class="input" style="width:120px">
+            <option value="10">10 filas</option>
+            <option value="25" selected>25 filas</option>
+            <option value="50">50 filas</option>
+          </select>
+          <button id="btn-reload" class="btn">Actualizar</button>
+          <button id="btn-prev" class="btn outline">← Anterior</button>
+          <button id="btn-next" class="btn outline">Siguiente →</button>
+          <button id="btn-export" class="btn">Exportar CSV</button>
+          <span id="meta" class="pill">0 resultados</span>
+        </div>
+        <div class="muted">Conectado como: <span id="who"></span></div>
+      </div></div>
+      <div class="card" style="margin-top:12px;"><div class="bd table-wrap">
+        <table class="table" id="tbl">
+          <thead><tr><th>Fecha</th><th>Nombre</th><th>Correo</th><th>Grupo</th><th>Dependencia</th><th>Opinión</th><th>Teléfono</th><th>Archivo</th><th>Estado</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div><h4>Horario</h4><p>Lunes a viernes, 09:00 a 16:00</p></div>
+      <div><h4>Contacto</h4><p>imdai.direcciongeneral@gmail.com</p></div>
+      <div><h4>Redes</h4><p>@Imdaibj</p></div>
+    </div>
+    <p class="copy">2025. Derechos reservados.</p>
+  </footer>
 </body>
 </html>
