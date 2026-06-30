@@ -18,7 +18,7 @@ app.use("/api/auth", require("./api/auth"));
 app.use("/api/opiniones", require("./api/opiniones"));
 app.use("/api/publicaciones", require("./api/publicaciones"));
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor IMDAI corriendo en http://localhost:${PORT}`);
 });

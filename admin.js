@@ -1,6 +1,6 @@
 // admin.js — Panel de administración (sin Firebase)
 (function () {
-  const API = "http://localhost:3000/api";
+  const API = "/api";
   const $ = (s) => document.querySelector(s);
 
   function getToken() { return localStorage.getItem("imdai_token"); }

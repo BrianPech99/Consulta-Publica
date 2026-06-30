@@ -1,6 +1,6 @@
 // publicaciones.js — Carga publicaciones desde API Node.js (sin Firebase)
 (function () {
-  const API = "http://localhost:3000/api";
+  const API = "/api";
   const $ = (s) => document.querySelector(s);
 
   function esc(str) {

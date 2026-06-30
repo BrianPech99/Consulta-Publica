@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const pool = require("../conexion");
 
 const router = express.Router();
-const JWT_SECRET = "imdai_cancun_2025_secret";
+const JWT_SECRET = process.env.JWT_SECRET || "imdai_cancun_2025_secret";
 
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
